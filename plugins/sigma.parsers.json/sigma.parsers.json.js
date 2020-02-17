@@ -38,6 +38,40 @@
   };
 
   /**
+   * Creates a new sigma instance or updates the graph of a given instance. 
+   * It is possible to give a callback that will be executed at the end of the process.
+   *
+   * @param  {object}       json     JSON content.
+   * @param  {object|sigma} sig      A sigma configuration object or a sigma
+   *                                 instance.
+   * @param  {?function}    callback Eventually a callback to execute after
+   *                                 having parsed the file. It will be called
+   *                                 with the related sigma instance as
+   *                                 parameter.
+   */
+  sigma.parsers.loadJSON = function(jsonGraph, sig, callback) {
+    // Update the instance's graph:
+    if (sig instanceof sigma) {
+      sig.graph.clear();
+      sig.graph.read(jsonGraph);
+
+    // ...or instantiate sigma if needed:
+    } else if (typeof sig === 'object') {
+      sig.graph = jsonGraph;
+      sig = new sigma(sig);
+
+    // ...or it's finally the callback:
+    } else if (typeof sig === 'function') {
+      callback = sig;
+      sig = null;
+    }
+
+    // Call the callback if specified:
+    if (callback)
+      callback(sig || jsonGraph);
+  };
+
+  /**
    * This function loads a JSON file and creates a new sigma instance or
    * updates the graph of a given instance. It is possible to give a callback
    * that will be executed at the end of the process.
@@ -61,26 +95,7 @@
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4) {
         graph = JSON.parse(xhr.responseText);
-
-        // Update the instance's graph:
-        if (sig instanceof sigma) {
-          sig.graph.clear();
-          sig.graph.read(graph);
-
-        // ...or instantiate sigma if needed:
-        } else if (typeof sig === 'object') {
-          sig.graph = graph;
-          sig = new sigma(sig);
-
-        // ...or it's finally the callback:
-        } else if (typeof sig === 'function') {
-          callback = sig;
-          sig = null;
-        }
-
-        // Call the callback if specified:
-        if (callback)
-          callback(sig || graph);
+        sigma.parsers.loadJSON(graph, sig, callback);
       }
     };
     xhr.send();
